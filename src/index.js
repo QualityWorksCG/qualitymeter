@@ -37,12 +37,7 @@ var qualitymeter = function () {
 
       //if the config data is empty, we populate it with default data.
       if (_.isEmpty(config.fileData)) {
-        //setting default config
-        config.fileData.urls = [];
-        config.fileData.output_to_screen = true;
-        config.fileData.whitleist = null;
-        config.fileData.save_to_file = null;
-        config.verbose = false;
+        config = _setDefaultConfigs(config);
       }
 
       //The verbose options outputs the configurations that are being used.
@@ -76,10 +71,6 @@ var qualitymeter = function () {
 
                 //Handle creating a report
                 if (config.report === true) {
-                  //Possible reporting scenarios
-                  //1. No report output file was set
-                  //2. No report template file was set
-                  //3. Any combination of those above
 
                   //default output file is 'qualitymeter.html'
                   var reportOutput = _dataExists(config.fileData.report_output) ? path.join(appRoot.path, config.fileData.report_output) : path.join(appRoot.path, "qualitymeter.html");
@@ -90,7 +81,6 @@ var qualitymeter = function () {
                   } else {
                     var html = pug.renderFile(reportTemplate, { filename: reportOutput, pretty: true, data: fileData });
                     //console.log(html);
-
                     _writeToFile(html, reportOutput, function (err) {
                       if (err) {
                         console.log("Error saving report");
@@ -104,7 +94,6 @@ var qualitymeter = function () {
                     });
                   }
                 }
-
               }
             });
           }
@@ -146,12 +135,7 @@ function _parseCommandArgs(process) {
           console.log('File name: ' + filepath + ' does not exist.');
           console.log('Using default configuration settings.');
 
-          //set default config settings
-          config.fileData.urls = [];
-          config.fileData.output_to_screen = true;
-          config.fileData.whitleist = null;
-          config.fileData.save_to_file = null;
-          config.verbose = false;
+          config = _setDefaultConfigs(config);
         }
         break;
       case "--verbose":
@@ -167,7 +151,7 @@ function _parseCommandArgs(process) {
       default: '';
     }
   }
-  
+
   return config;
 }
 
@@ -287,4 +271,15 @@ function _fileExists(filepath) {
   }
 }
 
+function _setDefaultConfigs(config) {
+  var _config = config;
+
+  _config.fileData.urls = [];
+  _config.fileData.output_to_screen = true;
+  _config.fileData.whitleist = null;
+  _config.fileData.save_to_file = null;
+  _config.verbose = false;
+
+  return _config;
+}
 module.exports = qualitymeter;
