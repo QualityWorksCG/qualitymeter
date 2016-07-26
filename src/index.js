@@ -42,7 +42,7 @@ var qualitymeter = function () {
         config.fileData.output_to_screen = true;
         config.fileData.whitleist = null;
         config.fileData.save_to_file = null;
-        config.verbose = true;
+        config.verbose = false;
       }
 
       //The verbose options outputs the configurations that are being used.
@@ -151,7 +151,7 @@ function _parseCommandArgs(process) {
           config.fileData.output_to_screen = true;
           config.fileData.whitleist = null;
           config.fileData.save_to_file = null;
-          config.verbose = true;
+          config.verbose = false;
         }
         break;
       case "--verbose":

@@ -41,3 +41,6 @@ jspm_packages
 coverage
 dist
 .nyc_output
+config.json
+qualitymeter.html
+qualitymeter.json

@@ -13,6 +13,9 @@
     "build:bin": "babel --out-dir dist/bin bin",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
+  "bin": {
+    "qualitymeter": "dist/bin/qualitymeter.js"
+  },
   "author": "QualityWorks Consulting Group Jamaica <wharding@qualityworkscg.com> (http://qualityworkscg.com/)",
   "license": "MIT",
   "files": [
