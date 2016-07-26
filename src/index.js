@@ -1,0 +1,290 @@
+
+import perf from  './qualitymeter';
+import _ from 'lodash';
+import fs from 'fs';
+import path from 'path';
+import appRoot from 'app-root-path';
+import pug from 'pug';
+
+var qualitymeter = function () {
+  var result, reports, fileName, fileSet = Date.now(), files = [], totalReports, reporFile,
+    help = require('./utils/help');
+
+  //If the argument is less than 2, some properties were missing
+  if (process.argv.length < 2) {
+    console.log('Usage: qualitymeter <URL> [options] (qualitymeter --help to display options)');
+  } else {
+
+    var config = _parseCommandArgs(process);
+
+    //if the user wants to see help, we show them and nothing else.
+    if (config.isHelp) {
+      help.show();
+    } else {
+
+      //if there is a second argument exists and it doenst start with a dash, we assume it is the url and add http:// infront if needed.
+      if (process.argv[2] != undefined && !process.argv[2].startsWith("-")) {
+        config.url = (process.argv[2].indexOf('http') !== 0) ? 'http://' + process.argv[2] : process.argv[2];
+      }
+      else {
+        config.url = (config.fileData.urls && config.fileData.urls != undefined) ? config.fileData.urls : null
+      }
+
+      if (config.url == null) {
+        console.log("No url was found in the command or configuration file.");
+        process.exit(1);
+      }
+
+      //if the config data is empty, we populate it with default data.
+      if (_.isEmpty(config.fileData)) {
+        //setting default config
+        config.fileData.urls = [];
+        config.fileData.output_to_screen = true;
+        config.fileData.whitleist = null;
+        config.fileData.save_to_file = null;
+        config.verbose = true;
+      }
+
+      //The verbose options outputs the configurations that are being used.
+      if (config.verbose == true) {
+        console.log('\nqualitymeter configurations: ');
+        console.log(config.fileData);
+      }
+
+      perf(config, function (err, output) {
+        if (err) {
+          console.log('\nThere was an error running performance test.\n')
+          console.log(err);
+        }
+        else {
+          if (config.fileData.output_to_screen && config.fileData.output_to_screen == true) {
+            console.log('\nqualitymeter performanace results: ');
+            console.log(output);
+          }
+
+          //Handle saving to a file
+          if (_dataExists(config.fileData.save_to_file)) {
+            _saveToFile(config, output, function (err) {
+              if (err) {
+                console.log('\nThere was a problem saving qualitymeter resutls to: ' + config.fileData.save_to_file);
+                console.log(err);
+              }
+              else {
+                console.log('\nqualitymeter performanace results saved to: ' + config.fileData.save_to_file);
+
+                var fileData = JSON.parse(fs.readFileSync(path.join(appRoot.path, config.fileData.save_to_file), 'utf8'));
+
+                //Handle creating a report
+                if (config.report === true) {
+                  //Possible reporting scenarios
+                  //1. No report output file was set
+                  //2. No report template file was set
+                  //3. Any combination of those above
+
+                  //default output file is 'qualitymeter.html'
+                  var reportOutput = _dataExists(config.fileData.report_output) ? path.join(appRoot.path, config.fileData.report_output) : path.join(appRoot.path, "qualitymeter.html");
+                  var reportTemplate = _dataExists(config.fileData.report_template) ? config.fileData.report_template : "qualitymeter_template.jade";
+
+                  if (!_fileExists(path.join(appRoot.path, reportTemplate))) {
+                    console.log("\nReport template does not exist. [" + path.join(appRoot.path, reportTemplate) + "]");
+                  } else {
+                    var html = pug.renderFile(reportTemplate, { filename: reportOutput, pretty: true, data: fileData });
+                    //console.log(html);
+
+                    _writeToFile(html, reportOutput, function (err) {
+                      if (err) {
+                        console.log("Error saving report");
+                        console.log(err);
+                      }
+                      else {
+                        if (config.verbose == true) {
+                          console.log("\nSaving performance report to [" + reportOutput + "] complete.");
+                        }
+                      }
+                    });
+                  }
+                }
+
+              }
+            });
+          }
+        }
+      });
+    }
+  }
+};
+
+function _parseCommandArgs(process) {
+
+  var config = {};
+  config.isHelp = false;
+  config.fileData = {};
+  config.verbose = false;
+  config.report = false;
+  config.url = [];
+
+  var _process = process;
+  var argSize = _process.argv.length;
+
+  //We ierate through the commands that were sent to do the correct process
+  for (var i = 0; i < argSize; i++) {
+    var arg = process.argv[i];
+    //console.log(arg);
+    switch (arg) {
+      case "--help":
+      case "-h":
+        config.isHelp = true;
+        break;
+
+      case "--config":
+      case "-c":
+        var filepath = process.argv[i + 1];
+        try {
+          fs.accessSync(path.join(appRoot.path, filepath), fs.F_OK);
+          config.fileData = JSON.parse(fs.readFileSync(path.join(appRoot.path, filepath), 'utf8'));
+        } catch (e) {
+          console.log('File name: ' + filepath + ' does not exist.');
+          console.log('Using default configuration settings.');
+
+          //set default config settings
+          config.fileData.urls = [];
+          config.fileData.output_to_screen = true;
+          config.fileData.whitleist = null;
+          config.fileData.save_to_file = null;
+          config.verbose = true;
+        }
+        break;
+      case "--verbose":
+      case "-v":
+        config.verbose = true;
+        break;
+
+      case "--report":
+      case "-r":
+        config.report = true;
+        break;
+
+      default: '';
+    }
+  }
+  
+  return config;
+}
+
+function _writeToFile(data, filename, cb) {
+  fs.writeFile(filename, data, { flag: 'w' }, function (err, fd) {
+    if (err) {
+      cb(err)
+    } else {
+      cb(null);
+    }
+  });
+}
+
+function _saveToFile(config, output, cb) {
+  if (_dataExists(config.fileData.file_write_format)) {
+
+    //if the file write format is a or w, we accept it, otherwise we use w
+    var flag = (config.fileData.file_write_format.trim() == 'w' || config.fileData.file_write_format.trim() == 'a') ? config.fileData.file_write_format.trim() : "w"
+    var resultsData = {};
+
+    if (config.verbose == true) {
+      console.log("\nSaving performance test results using '" + flag + "' foramt.");
+    }
+
+    if (flag === 'w') {
+      output.forEach(function (element) {
+        if (resultsData[element.url]) {
+          resultsData[element.url].push(element);
+        }
+        else {
+          resultsData[element.url] = [];
+          resultsData[element.url].push(element)
+        }
+      });
+
+      _writeToFile(JSON.stringify(resultsData), config.fileData.save_to_file, function (err) {
+        if (err) {
+          cb(err);
+        } else {
+          cb(null);
+        }
+      })
+    } else {
+      //if it is an append format, we check if the file exists, read the data into an array variable, push to the array, then write the data back to the file.
+      try {
+        fs.accessSync(path.join(appRoot.path, config.fileData.save_to_file), fs.F_OK);
+        var existingData = JSON.parse(fs.readFileSync(path.join(appRoot.path, config.fileData.save_to_file), 'utf8'));
+
+        output.forEach(function (element) {
+          if (existingData[element.url]) {
+            existingData[element.url].push(element);
+          }
+          else {
+            existingData[element.url] = [];
+            existingData[element.url].push(element)
+          }
+        });
+
+        _writeToFile(JSON.stringify(existingData), config.fileData.save_to_file, function (err) {
+          if (err) {
+            //console.log('\nThere was a problem saving qualitymeter resutls to: ' + config.fileData.save_to_file)
+            //console.log(err);
+            cb(err);
+          } else {
+            //console.log('\nqualitymeter performanace results saved to: ' + config.fileData.save_to_file);
+            cb(null);
+          }
+        })
+
+      } catch (e) {
+        if (config.verbose == true) {
+          console.log("Exisiting file not found, creating a new file: " + path.join(appRoot.path, config.fileData.save_to_file));
+        }
+
+        output.forEach(function (element) {
+          if (resultsData[element.url]) {
+            resultsData[element.url].push(element);
+          }
+          else {
+            resultsData[element.url] = [];
+            resultsData[element.url].push(element)
+          }
+        });
+
+        _writeToFile(JSON.stringify(resultsData), config.fileData.save_to_file, function (err) {
+          if (err) {
+            //console.log('\nThere was a problem saving qualitymeter resutls to: ' + config.fileData.save_to_file)
+            //console.log(err);
+            cb(err);
+          } else {
+            //console.log('\nqualitymeter performanace results saved to: ' + config.fileData.save_to_file);
+            cb(null);
+          }
+        })
+      }
+
+    }
+  }
+}
+
+function _dataExists(data) {
+  if (data && data != undefined && data != null && data.length > 0) {
+    return true;
+  }
+  else {
+    return false;
+  }
+}
+
+function _fileExists(filepath) {
+  try {
+    fs.accessSync(filepath, fs.F_OK);
+    return true;
+  }
+  catch (e) {
+    return false;
+  }
+}
+
+module.exports = qualitymeter;

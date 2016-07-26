@@ -1,16 +1,22 @@
 # qualitymeter
 ### A customizable web performance metrics collector.
 
+[![Build Status](https://travis-ci.org/QualityWorksCG/qualitymeter.svg)](https://travis-ci.org/QualityWorksCG/qualitywatcher)
+[![npm version](https://badge.fury.io/js/qualitymeter.svg)](https://badge.fury.io/js/qualitywatcher)
+[![npm Downloads](https://img.shields.io/npm/dt/qualitymeter.svg)](https://www.npmjs.com/package/qualitywatcher)
+[![Dependency Status](https://david-dm.org/qualityworkscg/qualitymeter.svg)](https://david-dm.org/qualityworkscg/qualitywatcher)
+[![npm](https://img.shields.io/npm/l/qualitymeter.svg)](https://www.npmjs.com/package/qualitywatcher)
+
 ---
 ## Requirements
 ___
 * [NodeJS](http://nodejs.org)
-
+* [PhantomJS](http://phantomjs.org/)
 
 ## Installation
 ---
 ```
-npm install qualitymeter --save-dev
+npm install qualitymeter -g
 ```
 
 ## Usage
