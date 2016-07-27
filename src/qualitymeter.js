@@ -9,10 +9,9 @@ var getPerformance = function (config, cb) {
   if (Array.isArray(config.url)) {
     var output = []
     async.each(config.url, function (url, done) {
-      _getPerformance(url, function (err, json) {
-        //something extra should be done here for errors
+      _getPerformance(url, config.fileData.timeout, function (err, json) {
         if (err) {
-          output.push({ "err": true, "errMessage": err, "url": url });
+          output.push(_setError(err, url, config.fileData.timeout));
           done();
         } else {
           output.push(json);
@@ -29,21 +28,21 @@ var getPerformance = function (config, cb) {
     });
   }
   else {
-    _getPerformance(config.url, function (err, json) {
-      json.url = config.url;
+    _getPerformance(config.url, config.fileData.timeout, function (err, json) {
       if (err) {
-        cb(err, null);
+        cb(err, _setError(err, config.url, config.fileData.timeout));
       }
       else {
+        json.url = config.url;
         cb(null, _filterData(config, json))
       }
     })
   }
 }
 
-function _getPerformance(url, cb) {
-  var startTime = moment();
+function _getPerformance(url, timeout, cb) {
   var bar;
+  var startTime = moment().format("MMM Do, YYYY h:mm:ss a");
 
   bar = new ProgressBar('[:bar] :percent :etas', {
     total: 100,
@@ -52,22 +51,25 @@ function _getPerformance(url, cb) {
 
   console.log("Running performance test on: " + url);
 
-  var child = phantomas(url, function (err, json, results) {
+  var child = phantomas(url, { timeout: timeout }, function (err, json, results) {
     if (err) {
       cb(err, null)
     }
     else {
+
+      var endTime = moment().format("MMM Do, YYYY h:mm:ss a");
       json.startTime = startTime;
+      json.endTime = endTime;
       cb(null, json);
     }
   });
 
-  child.on('progress', function (progress, inc) { 
+  child.on('progress', function (progress, inc) {
     if (bar) {
       bar.tick(inc);
     }
-    progress == 100 ? console.log("Saving report data."):"";
-    
+    progress == 100 ? console.log("Saving report data.") : "";
+
   });
 }
 
@@ -90,6 +92,8 @@ function _filterData(config, json) {
             }
           })
           _output["url"] = _.get(jsonObject, "url");
+          _output["startTime"] = _.get(jsonObject, "startTime");
+          _output["endTime"] = _.get(jsonObject, "endTime");
           _output = _findTotalLoadTime(_output, jsonObject);
           output.push(_output);
         }
@@ -108,6 +112,8 @@ function _filterData(config, json) {
           }
         })
         output["url"] = _.get(json, "url");
+        output["startTime"] = _.get(json, "startTime");
+        output["endTime"] = _.get(json, "endTime");
         _output = _findTotalLoadTime(_output, jsonObject);
       }
       else {
@@ -137,6 +143,19 @@ function _findTotalLoadTime(output, json) {
   }
 
   return output;
+}
+
+function _setError(err, url, timeout) {
+  var errObj = { "err": true, "errMessage": err, "url": url, "errDescription": "" };
+
+  if (err.toString() == 'Error: 254') {
+    errObj.errDescription = "The url may be invalid";
+  }
+  else if (err.toString() == 'Error: 252') {
+    errObj.errDescription = "The website may not have loaded within the given timeout period. (" + timeout + "s)";
+  }
+
+  return errObj;
 }
 
 export default getPerformance;

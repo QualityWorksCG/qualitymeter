@@ -7,8 +7,7 @@ import appRoot from 'app-root-path';
 import pug from 'pug';
 
 var qualitymeter = function () {
-  var result, reports, fileName, fileSet = Date.now(), files = [], totalReports, reporFile,
-    help = require('./utils/help');
+  var help = require('./utils/help');
 
   //If the argument is less than 2, some properties were missing
   if (process.argv.length < 2) {
@@ -21,15 +20,6 @@ var qualitymeter = function () {
     if (config.isHelp) {
       help.show();
     } else {
-
-      //if there is a second argument exists and it doenst start with a dash, we assume it is the url and add http:// infront if needed.
-      if (process.argv[2] != undefined && !process.argv[2].startsWith("-")) {
-        config.url = (process.argv[2].indexOf('http') !== 0) ? 'http://' + process.argv[2] : process.argv[2];
-      }
-      else {
-        config.url = (config.fileData.urls && config.fileData.urls != undefined) ? config.fileData.urls : null
-      }
-
       if (config.url == null) {
         console.log("No url was found in the command or configuration file.");
         process.exit(1);
@@ -46,10 +36,11 @@ var qualitymeter = function () {
         console.log(config.fileData);
       }
 
+      //carry out performance tests
       perf(config, function (err, output) {
         if (err) {
           console.log('\nThere was an error running performance test.\n')
-          console.log(err);
+          console.log(output);
         }
         else {
           if (config.fileData.output_to_screen && config.fileData.output_to_screen == true) {
@@ -69,7 +60,7 @@ var qualitymeter = function () {
 
                 var fileData = JSON.parse(fs.readFileSync(path.join(appRoot.path, config.fileData.save_to_file), 'utf8'));
 
-                //Handle creating a report
+                //Handle creating a report - report can only be generated if the data was saved to a file
                 if (config.report === true) {
 
                   //default output file is 'qualitymeter.html'
@@ -80,7 +71,7 @@ var qualitymeter = function () {
                     console.log("\nReport template does not exist. [" + path.join(appRoot.path, reportTemplate) + "]");
                   } else {
                     var html = pug.renderFile(reportTemplate, { filename: reportOutput, pretty: true, data: fileData });
-                    //console.log(html);
+                    
                     _writeToFile(html, reportOutput, function (err) {
                       if (err) {
                         console.log("Error saving report");
@@ -147,9 +138,16 @@ function _parseCommandArgs(process) {
       case "-r":
         config.report = true;
         break;
-
-      default: '';
+      default:
+        break;
     }
+  }
+  //if there a second argument exists and it doenst start with a dash, we assume it is the url and add http:// infront if needed.
+  if (process.argv[2] != undefined && !process.argv[2].startsWith("-")) {
+    config.url = (process.argv[2].indexOf('http') !== 0) ? 'http://' + process.argv[2] : process.argv[2];
+  }
+  else {
+    config.url = (config.fileData.urls && config.fileData.urls != undefined) ? config.fileData.urls : null
   }
 
   return config;
@@ -212,11 +210,8 @@ function _saveToFile(config, output, cb) {
 
         _writeToFile(JSON.stringify(existingData), config.fileData.save_to_file, function (err) {
           if (err) {
-            //console.log('\nThere was a problem saving qualitymeter resutls to: ' + config.fileData.save_to_file)
-            //console.log(err);
             cb(err);
           } else {
-            //console.log('\nqualitymeter performanace results saved to: ' + config.fileData.save_to_file);
             cb(null);
           }
         })
@@ -238,11 +233,8 @@ function _saveToFile(config, output, cb) {
 
         _writeToFile(JSON.stringify(resultsData), config.fileData.save_to_file, function (err) {
           if (err) {
-            //console.log('\nThere was a problem saving qualitymeter resutls to: ' + config.fileData.save_to_file)
-            //console.log(err);
             cb(err);
           } else {
-            //console.log('\nqualitymeter performanace results saved to: ' + config.fileData.save_to_file);
             cb(null);
           }
         })
@@ -278,6 +270,7 @@ function _setDefaultConfigs(config) {
   _config.fileData.output_to_screen = true;
   _config.fileData.whitleist = null;
   _config.fileData.save_to_file = null;
+  _config.fileData.timeout = 15;
   _config.verbose = false;
 
   return _config;
