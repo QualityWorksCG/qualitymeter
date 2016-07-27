@@ -199,9 +199,10 @@ function _saveToFile(config, output, cb) {
       })
     } else {
       //if it is an append format, we check if the file exists, read the data into an array variable, push to the array, then write the data back to the file.
-      try {
-        fs.accessSync(path.join(appRoot.path, config.fileData.save_to_file), fs.F_OK);
-        var existingData = JSON.parse(fs.readFileSync(path.join(appRoot.path, config.fileData.save_to_file), 'utf8'));
+      var existingDataFilePath = _absoluteOrRelative(config.fileData.save_to_file)
+
+      if (existingDataFilePath != null) {
+        var existingData = JSON.parse(fs.readFileSync(existingDataFilePath, 'utf8'));
 
         output.forEach(function (element) {
           if (existingData[element.url]) {
@@ -220,8 +221,7 @@ function _saveToFile(config, output, cb) {
             cb(null);
           }
         })
-
-      } catch (e) {
+      } else {
         if (config.verbose == true) {
           console.log("Exisiting file not found, creating a new file: " + path.join(appRoot.path, config.fileData.save_to_file));
         }
@@ -244,7 +244,6 @@ function _saveToFile(config, output, cb) {
           }
         })
       }
-
     }
   }
 }
@@ -295,4 +294,4 @@ function _absoluteOrRelative(filepath) {
   }
 }
 
-  module.exports = qualitymeter;
+module.exports = qualitymeter;
