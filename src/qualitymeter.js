@@ -114,7 +114,7 @@ function _filterData(config, json) {
         output["url"] = _.get(json, "url");
         output["startTime"] = _.get(json, "startTime");
         output["endTime"] = _.get(json, "endTime");
-        _output = _findTotalLoadTime(_output, jsonObject);
+        output = _findTotalLoadTime(_output, jsonObject);
       }
       else {
         output = json;
