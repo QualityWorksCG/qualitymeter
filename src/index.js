@@ -325,19 +325,33 @@ function _parseOutput(output) {
     "endTime": " Test Complete: --- "
   }
 
-  _output.forEach(function (result) {
-    console.log("\nURL: "+result["url"]);
+  if (Array.isArray(_output)) {
+    _output.forEach(function (result) {
+      console.log("\nURL: " + result["url"]);
 
-    Object.keys(result).forEach(function (key) {
+      Object.keys(result).forEach(function (key) {
+        if (human_readable_map.hasOwnProperty(key)) {
+          console.log(human_readable_map[key].split('---')[0] + result[key] + human_readable_map[key].split('---')[1]);
+          result["friendly_name"] = human_readable_map[key].split('---')[0].trim();
+        }
+        else if (key != "url") {
+          console.log(key + ": " + result[key])
+        }
+      })
+    })
+  } else {
+    console.log("\nURL: " + _output["url"]);
+
+    Object.keys(_output).forEach(function (key) {
       if (human_readable_map.hasOwnProperty(key)) {
-        console.log(human_readable_map[key].split('---')[0] + result[key] + human_readable_map[key].split('---')[1]);
-        result["friendly_name"] = human_readable_map[key].split('---')[0].trim();
+        console.log(human_readable_map[key].split('---')[0] + _output[key] + human_readable_map[key].split('---')[1]);
+        _output["friendly_name"] = human_readable_map[key].split('---')[0].trim();
       }
-      else if(key!="url"){
-        console.log(key + ": " + result[key])
+      else if (key != "url") {
+        console.log(key + ": " + _output[key])
       }
     })
-  })
+  }
 
   return _output;
 }
