@@ -3,6 +3,7 @@ import perf from  './qualitymeter';
 import _ from 'lodash';
 import fs from 'fs';
 import path from 'path';
+import mkdirp from 'mkdirp';
 import appRoot from 'app-root-path';
 import pug from 'pug';
 
@@ -159,11 +160,18 @@ function _parseCommandArgs(process) {
 }
 
 function _writeToFile(data, filename, cb) {
-  fs.writeFile(filename, data, { flag: 'w' }, function (err, fd) {
+  mkdirp(path.dirname(filename), function (err) {
     if (err) {
-      cb(err)
-    } else {
-      cb(null);
+      return cb(err);
+    }
+    else {
+      fs.writeFile(filename, data, { flag: 'w' }, function (err, fd) {
+        if (err) {
+          cb(err)
+        } else {
+          cb(null);
+        }
+      });
     }
   });
 }
@@ -223,7 +231,7 @@ function _saveToFile(config, output, cb) {
         })
       } else {
         if (config.verbose == true) {
-          console.log("Exisiting file not found, creating a new file: " + path.join(appRoot.path, config.fileData.save_to_file));
+          console.log("Exisiting file not found, creating a new file: " + path.join(process.cwd(), config.fileData.save_to_file));
         }
 
         output.forEach(function (element) {
@@ -294,7 +302,7 @@ function _absoluteOrRelative(filepath) {
   }
 }
 
-function _globalOrLocal(filepath){
+function _globalOrLocal(filepath) {
   try {
     fs.accessSync(path.join(appRoot.path, filepath), fs.F_OK);
     return path.join(appRoot.path, filepath);
