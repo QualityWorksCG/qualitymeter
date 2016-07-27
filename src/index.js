@@ -65,7 +65,7 @@ var qualitymeter = function () {
 
                   //default output file is 'qualitymeter.html'
                   var reportOutput = _dataExists(config.fileData.report_output) ? config.fileData.report_output : "qualitymeter.html";
-                  var reportTemplate = _dataExists(config.fileData.report_template) ? _absoluteOrRelative(config.fileData.report_template) : path.join(appRoot.path, "qualitymeter_template.jade");
+                  var reportTemplate = _dataExists(config.fileData.report_template) ? _absoluteOrRelative(config.fileData.report_template) : _globalOrLocal("qualitymeter_template.jade");
 
                   if (reportTemplate == null) {
                     console.log("\nReport template does not exist. [" + path.join(appRoot.path, reportTemplate) + "]");
@@ -291,6 +291,15 @@ function _absoluteOrRelative(filepath) {
     } catch (e) {
       return null;
     }
+  }
+}
+
+function _globalOrLocal(filepath){
+  try {
+    fs.accessSync(path.join(appRoot.path, filepath), fs.F_OK);
+    return path.join(appRoot.path, filepath);
+  } catch (e) {
+    return path.join(__dirname, filepath);
   }
 }
 
