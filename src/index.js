@@ -6,6 +6,7 @@ import path from 'path';
 import mkdirp from 'mkdirp';
 import appRoot from 'app-root-path';
 import pug from 'pug';
+import moment from 'moment';
 
 var qualitymeter = function () {
   var help = require('./utils/help');
@@ -46,7 +47,7 @@ var qualitymeter = function () {
         else {
           if (config.fileData.output_to_screen && config.fileData.output_to_screen == true) {
             console.log('\nqualitymeter performanace results: ');
-            console.log(output);
+            output = _parseOutput(output);
           }
 
           //Handle saving to a file
@@ -63,7 +64,7 @@ var qualitymeter = function () {
 
                 //Handle creating a report - report can only be generated if the data was saved to a file
                 if (config.report === true) {
-
+                  console.log("\nRendering report.")
                   //default output file is 'qualitymeter.html'
                   var reportOutput = _dataExists(config.fileData.report_output) ? config.fileData.report_output : "qualitymeter.html";
                   var reportTemplate = _dataExists(config.fileData.report_template) ? _absoluteOrRelative(config.fileData.report_template) : _globalOrLocal("qualitymeter_template.jade");
@@ -75,7 +76,7 @@ var qualitymeter = function () {
 
                     _writeToFile(html, reportOutput, function (err) {
                       if (err) {
-                        console.log("Error saving report");
+                        console.log("\nError saving report");
                         console.log(err);
                       }
                       else {
@@ -309,6 +310,36 @@ function _globalOrLocal(filepath) {
   } catch (e) {
     return path.join(__dirname, filepath);
   }
+}
+
+function _parseOutput(output) {
+  var _output = output;
+
+  var human_readable_map = {
+    "metrics.timeToFirstByte": " First http response: --- ms",
+    "metrics.domInteractive": " Time for page model constructed: --- ms",
+    "metrics.domComplete": " Page Loading Time: --- ms",
+    "total_load_time": " Total Loading Time --- ms",
+    "metrics.DOMelementsCount": " Total Page elements: --- ",
+    "startTime": " Test Started: --- ",
+    "endTime": " Test Complete: --- "
+  }
+
+  _output.forEach(function (result) {
+    console.log("\nURL: "+result["url"]);
+
+    Object.keys(result).forEach(function (key) {
+      if (human_readable_map.hasOwnProperty(key)) {
+        console.log(human_readable_map[key].split('---')[0] + result[key] + human_readable_map[key].split('---')[1]);
+        result["friendly_name"] = human_readable_map[key].split('---')[0].trim();
+      }
+      else if(key!="url"){
+        console.log(key + ": " + result[key])
+      }
+    })
+  })
+
+  return _output;
 }
 
 module.exports = qualitymeter;

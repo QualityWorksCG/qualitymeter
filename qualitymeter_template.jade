@@ -29,21 +29,11 @@ html
 		.container
 			.charts
 				.row
-					.col-md-6
-						canvas#id(width="400" height="300")
-						p.text-center Chart comparing total successful vs total failed requests to a url
 				
 				br/
 				h2.text-center Metric Charts per URL
 				.row#metrics
 
-				br/
-				h2.text-center Resource Charts per URL (Data Size)
-				.row#resource-size
-
-				br/
-				h2.text-center Resource Charts per URL (Speed)
-				.row#resource-speed
 		
 		script(src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="   crossorigin="anonymous")
 		script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js", integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa", crossorigin="anonymous")
@@ -55,21 +45,9 @@ html
 			var resourceSizeChartCount = 0;
 			var resourceSpeedChartCount = 0;
 
-			// Summary bar chart
-			var ctx = $("#id");
-			var summaryBarChart = new Chart(ctx, {
-				type: 'bar',
-				data: getBarchartData(data),
-				options: {
-					title: {
-						display: true,
-						text: 'Successful vs Failed Url Requests'
-					}
-				}
-			});
-
-			//Metrics charts - one per url
+			//Metrics charts - 5 per url
 			Object.keys(data).forEach(function(key){
+				
 				var _results = data[key];
 				$('#metrics').append('<div class="col-md-12" ><canvas  width="400" height="200" id=metricChart'+metricChartCount+'></canvas></div>');
 
@@ -93,119 +71,49 @@ html
 					}
 				});
 
-				metricChartCount++;
-			});
-
-			//Resources (bytes) - one per url
-			Object.keys(data).forEach(function(key){
-				var _results = data[key];
-				$('#resource-size').append('<div class="col-md-12" ><canvas  width="400" height="200" id=resourceSizeChart'+resourceSizeChartCount+'></canvas></div>');
-
-				var resourceSizeCtx = $("#resourceSizeChart"+resourceSizeChartCount);
-				var resourceSizeGraph = new Chart(resourceSizeCtx, {
+				$('#metrics').append('<div class="col-md-12" ><canvas  width="400" height="200" id=elementCount'+metricChartCount+'></canvas></div>');
+				var countCtx = $("#elementCount"+metricChartCount);
+				var countLineGraph = new Chart(countCtx, {
 				type: 'line',
-				data: getResourceSizeData(_results),
-					options: {
-						title: {
-							display: true,
-							text: 'Resource Metrics (data size) - '+key
-						},
-						scales: {
-							yAxes: [{
-								scaleLabel: {
-									display: true,
-									labelString: 'bytes'
-								}
-							}]
-						}
-					}
-				});
-
-				resourceSizeChartCount++;
-			});
-
-			//Resources (speed) - one per url
-			Object.keys(data).forEach(function(key){
-				var _results = data[key];
-				$('#resource-speed').append('<div class="col-md-12" ><canvas  width="400" height="200" id=resourceSpeedChart'+resourceSpeedChartCount+'></canvas></div>');
-
-				var resourceSpeedCtx = $("#resourceSpeedChart"+resourceSpeedChartCount);
-				var resourceSpeedGraph = new Chart(resourceSpeedCtx, {
-				type: 'line',
-				data: getResourceSpeedData(_results),
-					options: {
-						title: {
-							display: true,
-							text: 'Resource Metrics (speed) - '+key
-						},
-						scales: {
-							yAxes: [{
-								scaleLabel: {
-									display: true,
-									labelString: 'ms'
-								}
-							}]
-						}
-					}
-				});
-
-				resourceSpeedChartCount++;
-			});
-
-			function getBarchartData(data){
-				var _data = data;
-				var barchartData = {
-					labels: Object.keys(_data),
-					datasets: [
+				data: {
+					labels:_results.map(function(a) {return a.startTime;}),
+					datasets:[
 						{
-							label: 'Number of errors',
-							backgroundColor: 'rgba(255, 99, 132, 0.2)',
-							borderColor: 'rgba(255,99,132,1)',
-							borderWidth:1,
-							data: countErrors(_data)
-						},
-						{
-							label: 'Number of successes',
-							backgroundColor: 'rgba(75, 192, 192, 0.2)',
-							borderColor: 'rgba(75, 192, 192, 1)',
-							borderWidth:1,
-							data: countSuccessess(_data)
+							label: 'Page elements',
+							fill: true,
+							lineTension: 0.1,
+							backgroundColor: "rgba(75,192,192,0.2)",
+							borderColor: "rgba(75,192,192,1)",
+							borderCapStyle: 'butt',
+							borderDash: [],
+							borderDashOffset: 0.0,
+							borderJoinStyle: 'miter',
+							pointBorderColor: "rgba(75,192,192,1)",
+							pointBackgroundColor: "#fff",
+							pointBorderWidth: 1,
+							pointHoverRadius: 5,
+							pointHoverBackgroundColor: "rgba(75,192,192,1)",
+							pointHoverBorderColor: "rgba(220,220,220,1)",
+							pointHoverBorderWidth: 1,
+							pointRadius: 1,
+							pointHitRadius: 10,
+							data: _results.map(function(a) {return a["metrics.DOMelementsCount"];}),
+							spanGaps: false,
+							borderWidth:1
 						}
 					]
-				};
-
-				return barchartData
-			}
-
-			function countErrors(data){
-				var count = [];
-				var _data = data;
-
-				Object.keys(_data).forEach(function(key){
-					_results = _data[key];
-
-					count.push(_results.filter(function(item){
-						return item.hasOwnProperty("err")
-					}).length);
+				},
+					options: {
+						title: {
+							display: true,
+							text: 'Total page elements - '+key
+						}
+					}
 				});
 
-				return count;
-			}
 
-			function countSuccessess(data){
-				var count = [];
-				var _data = data;
-
-				Object.keys(_data).forEach(function(key){
-					_results = _data[key];
-
-					count.push(_results.filter(function(item){
-						return !item.hasOwnProperty("err")
-					}).length);
-				});
-
-				return count;
-			}
+				metricChartCount++;
+			});
 
 			function getMetricsData(data){
 				var _data = data;
@@ -214,7 +122,7 @@ html
 					labels: _data.map(function(a) {return a.startTime;}),
 					datasets: [
 						{
-							label: 'Time to load first Byte',
+							label: 'First http response',
 							fill: false,
 							lineTension: 0.1,
 							backgroundColor: "rgba(75,192,192,0.4)",
@@ -237,7 +145,7 @@ html
 							borderWidth:1
 						},
 						{
-							label: 'Time untill the DOM was interactive',
+							label: 'Time for page model constructed',
 							fill: false,
 							lineTension: 0.1,
 							backgroundColor: "rgba(255, 99, 132, 0.4)",
@@ -260,30 +168,7 @@ html
 							spanGaps: false
 						},
 						{
-							label: 'Time untill DOM content was loaded',
-							fill: false,
-							lineTension: 0.1,
-							backgroundColor: "rgba(54, 162, 235, 0.4)",
-							borderColor: "rgba(54, 162, 235, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(54, 162, 235, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(54, 162, 235, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.domContentLoaded"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Time until the DOM was complete',
+							label: 'Page Loading Time',
 							fill: false,
 							lineTension: 0.1,
 							backgroundColor: "rgba(255, 206, 86, 0.4)",
@@ -306,30 +191,7 @@ html
 							spanGaps: false
 						},
 						{
-							label: 'Total DOM elements',
-							fill: false,
-							lineTension: 0.1,
-							backgroundColor: "rgba(153, 102, 255, 0.4)",
-							borderColor: "rgba(153, 102, 255, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(153, 102, 255, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(153, 102, 255, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.DOMelementsCount"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Total load time',
+							label: 'Total Loading Time',
 							fill: false,
 							lineTension: 0.1,
 							backgroundColor: "rgba(255, 159, 64, 0.4)",
@@ -348,214 +210,6 @@ html
 							pointRadius: 1,
 							pointHitRadius: 10,
 							data: _data.map(function(a) {return a["total_load_time"];}),
-							borderWidth:1,
-							spanGaps: false
-						}
-					]
-				};
-
-				return metricData
-			}
-
-			function getResourceSizeData(data){
-				var _data = data;
-
-				var metricData = {
-					labels: _data.map(function(a) {return a.startTime;}),
-					datasets: [
-						{
-							label: 'Smallest Response',
-							fill:false,
-							lineTension: 0.1,
-							backgroundColor: "rgba(75,192,192,0.4)",
-							borderColor: "rgba(75,192,192,1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(75,192,192,1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(75,192,192,1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.smallestResponse"];}),
-							spanGaps: false,
-							borderWidth:1
-						},
-						{
-							label: 'Biggest Response',
-							fill:false,
-							lineTension: 0.1,
-							backgroundColor: "rgba(255, 99, 132, 0.4)",
-							borderColor: "rgba(255,99,132,1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(255,99,132,1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(255,99,132,1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.biggestResponse"];}),
-							borderWidth:1,
-							spanGaps: false
-						}
-					]
-				};
-
-				return metricData
-			}
-
-			function getResourceSpeedData(data){
-				var _data = data;
-
-				var metricData = {
-					labels: _data.map(function(a) {return a.startTime;}),
-					datasets: [
-						{
-							label: 'Fastest Response',
-							fill:true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(75,192,192,0.2)",
-							borderColor: "rgba(75,192,192,1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(75,192,192,1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(75,192,192,1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.fastestResponse"];}),
-							spanGaps: false,
-							borderWidth:1
-						},
-						{
-							label: 'Slowest Response',
-							fill:true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(255, 99, 132, 0.2)",
-							borderColor: "rgba(255,99,132,1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(255,99,132,1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(255,99,132,1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.slowestResponse"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Smallest Latency',
-							fill: true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(54, 162, 235, 0.4)",
-							borderColor: "rgba(54, 162, 235, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(54, 162, 235, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(54, 162, 235, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.smallestLatency"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Biggest Latency',
-							fill: true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(255, 206, 86, 0.2)",
-							borderColor: "rgba(255, 206, 86, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(255, 206, 86, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(255, 206, 86, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.biggestLatency"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Median Response',
-							fill: true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(153, 102, 255, 0.2)",
-							borderColor: "rgba(153, 102, 255, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(153, 102, 255, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(153, 102, 255, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.medianResponse"];}),
-							borderWidth:1,
-							spanGaps: false
-						},
-						{
-							label: 'Median Latency',
-							fill: true,
-							lineTension: 0.1,
-							backgroundColor: "rgba(255, 159, 64, 0.2)",
-							borderColor: "rgba(255, 159, 64, 1)",
-							borderCapStyle: 'butt',
-							borderDash: [],
-							borderDashOffset: 0.0,
-							borderJoinStyle: 'miter',
-							pointBorderColor: "rgba(255, 159, 64, 1)",
-							pointBackgroundColor: "#fff",
-							pointBorderWidth: 1,
-							pointHoverRadius: 5,
-							pointHoverBackgroundColor: "rgba(255, 159, 64, 1)",
-							pointHoverBorderColor: "rgba(220,220,220,1)",
-							pointHoverBorderWidth: 1,
-							pointRadius: 1,
-							pointHitRadius: 10,
-							data: _data.map(function(a) {return a["metrics.medianLatency"];}),
 							borderWidth:1,
 							spanGaps: false
 						}

@@ -68,7 +68,7 @@ function _getPerformance(url, timeout, cb) {
     if (bar) {
       bar.tick(inc);
     }
-    progress == 100 ? console.log("Saving report data.") : "";
+    progress = progress == 100 ? 0:progress;
 
   });
 }
