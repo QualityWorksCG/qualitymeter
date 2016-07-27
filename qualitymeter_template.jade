@@ -5,7 +5,21 @@ html
 	meta(name="viewport" content="width=device-width, initial-scale=1")
 
 	head
-			link(rel='stylesheet', href='report-ui/css/main.min.css')
+		link(href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css", rel="stylesheet", integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u", crossorigin="anonymous")
+
+		style.
+			body{
+				background-color: #eee
+			}
+			
+			h1{
+				margin-bottom: 2em
+				color: rgba(0, 0, 0, 0.4)
+			}
+
+			h1>span{
+				color: #4aa2a2
+			}
 
 	body
 		.container-fluid
@@ -31,14 +45,17 @@ html
 				h2.text-center Resource Charts per URL (Speed)
 				.row#resource-speed
 		
-		script(src="report-ui/js/main.min.js")
+		script(src="https://code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44="   crossorigin="anonymous")
+		script(src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js", integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa", crossorigin="anonymous")
+		script(src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js")
+
 		script.
 			var data = !{JSON.stringify(data)};
 			var metricChartCount = 0;
 			var resourceSizeChartCount = 0;
 			var resourceSpeedChartCount = 0;
 
-			//Summary bar chart
+			// Summary bar chart
 			var ctx = $("#id");
 			var summaryBarChart = new Chart(ctx, {
 				type: 'bar',
