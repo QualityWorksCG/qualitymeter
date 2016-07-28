@@ -46,7 +46,7 @@ var qualitymeter = function () {
         }
         else {
           if (config.fileData.output_to_screen && config.fileData.output_to_screen == true) {
-            console.log('\nqualitymeter performanace results: ');
+            console.log('\nqualitymeter performance results: ');
             output = _parseOutput(output);
           }
 
