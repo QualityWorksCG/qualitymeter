@@ -8,6 +8,7 @@ import appRoot from 'app-root-path';
 import pug from 'pug';
 import moment from 'moment';
 
+
 var qualitymeter = function () {
   var help = require('./utils/help');
 
@@ -27,10 +28,10 @@ var qualitymeter = function () {
         process.exit(1);
       }
 
-      //if the config data is empty, we populate it with default data.
-      if (_.isEmpty(config.fileData)) {
-        config = _setDefaultConfigs(config);
-      }
+      // //if the config data is empty, we populate it with default data.
+      // if (_.isEmpty(config.fileData)) {
+      //   config = _setDefaultConfigs(config);
+      // }
 
       //The verbose options outputs the configurations that are being used.
       if (config.verbose == true) {
@@ -105,6 +106,8 @@ function _parseCommandArgs(process) {
   config.report = false;
   config.url = [];
 
+  config = _setDefaultConfigs(config);
+
   var _process = process;
   var argSize = _process.argv.length;
 
@@ -124,6 +127,7 @@ function _parseCommandArgs(process) {
         try {
           fs.accessSync(path.join(process.cwd(), filepath), fs.F_OK);
           config.fileData = JSON.parse(fs.readFileSync(path.join(process.cwd(), filepath), 'utf8'));
+
         } catch (e) {
           try {
             fs.accessSync(filepath, fs.F_OK);
@@ -131,10 +135,9 @@ function _parseCommandArgs(process) {
           } catch (e) {
             console.log('File name: ' + filepath + ' does not exist.');
             console.log('Using default configuration settings.');
-
-            config = _setDefaultConfigs(config);
           }
         }
+        config = _setDefaultConfigs(config);
         break;
       case "--verbose":
       case "-v":
@@ -149,7 +152,7 @@ function _parseCommandArgs(process) {
         break;
     }
   }
-  //if there a second argument exists and it doenst start with a dash, we assume it is the url and add http:// infront if needed.
+  //if a second argument exists and it doenst start with a dash, we assume it is the url and add http:// infront if needed.
   if (process.argv[2] != undefined && !process.argv[2].startsWith("-")) {
     config.url = (process.argv[2].indexOf('http') !== 0) ? 'http://' + process.argv[2] : process.argv[2];
   }
@@ -189,15 +192,21 @@ function _saveToFile(config, output, cb) {
     }
 
     if (flag === 'w') {
-      output.forEach(function (element) {
-        if (resultsData[element.url]) {
-          resultsData[element.url].push(element);
-        }
-        else {
-          resultsData[element.url] = [];
-          resultsData[element.url].push(element)
-        }
-      });
+
+      if (Array.isArray(output)) {
+        output.forEach(function (element) {
+          if (resultsData[element.url]) {
+            resultsData[element.url].push(element);
+          }
+          else {
+            resultsData[element.url] = [];
+            resultsData[element.url].push(element)
+          }
+        });
+      }
+      else {
+        resultsData = output;
+      }
 
       _writeToFile(JSON.stringify(resultsData), config.fileData.save_to_file, function (err) {
         if (err) {
@@ -213,15 +222,21 @@ function _saveToFile(config, output, cb) {
       if (existingDataFilePath != null) {
         var existingData = JSON.parse(fs.readFileSync(existingDataFilePath, 'utf8'));
 
-        output.forEach(function (element) {
-          if (existingData[element.url]) {
-            existingData[element.url].push(element);
-          }
-          else {
-            existingData[element.url] = [];
-            existingData[element.url].push(element)
-          }
-        });
+
+        if (Array.isArray(output)) {
+
+          output.forEach(function (element) {
+            if (existingData[element.url]) {
+              existingData[element.url].push(element);
+            }
+            else {
+              existingData[element.url] = [];
+              existingData[element.url].push(element)
+            }
+          });
+        } else {
+          existingData = output;
+        }
 
         _writeToFile(JSON.stringify(existingData), config.fileData.save_to_file, function (err) {
           if (err) {
@@ -235,15 +250,20 @@ function _saveToFile(config, output, cb) {
           console.log("Exisiting file not found, creating a new file: " + path.join(process.cwd(), config.fileData.save_to_file));
         }
 
-        output.forEach(function (element) {
-          if (resultsData[element.url]) {
-            resultsData[element.url].push(element);
-          }
-          else {
-            resultsData[element.url] = [];
-            resultsData[element.url].push(element)
-          }
-        });
+        if (Array.isArray(output)) {
+
+          output.forEach(function (element) {
+            if (resultsData[element.url]) {
+              resultsData[element.url].push(element);
+            }
+            else {
+              resultsData[element.url] = [];
+              resultsData[element.url].push(element)
+            }
+          });
+        } else {
+          resultsData = output;
+        }
 
         _writeToFile(JSON.stringify(resultsData), config.fileData.save_to_file, function (err) {
           if (err) {
@@ -279,12 +299,14 @@ function _fileExists(filepath) {
 function _setDefaultConfigs(config) {
   var _config = config;
 
-  _config.fileData.urls = [];
-  _config.fileData.output_to_screen = true;
-  _config.fileData.whitleist = null;
-  _config.fileData.save_to_file = null;
-  _config.fileData.timeout = 15;
-  _config.verbose = false;
+  _config.fileData.urls = _config.fileData.urls?_config.fileData.urls:[];
+  _config.fileData.output_to_screen = _config.fileData.output_to_screen?_config.fileData.output_to_screen:true;
+  _config.fileData.whitleist = _config.fileData.whitleist?_config.fileData.whitleist:null;
+  _config.fileData.save_to_file = _config.fileData.save_to_file?_config.fileData.save_to_file:null;
+  _config.fileData.timeout = _config.fileData.timeout?_config.fileData.timeout:15;
+  _config.fileData.cookies = _config.fileData.cookies?_config.fileData.cookies:null;
+  _config.fileData.screenshot = _config.fileData.screenshot?_config.fileData.screenshot:false;
+  _config.verbose = _config.verbose?_config.verbose:false;
 
   return _config;
 }
@@ -352,7 +374,6 @@ function _parseOutput(output) {
       }
     })
   }
-
   return _output;
 }
 

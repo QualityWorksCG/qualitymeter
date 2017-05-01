@@ -3,13 +3,19 @@ const _ = require('lodash');
 const async = require('async');
 const moment = require('moment');
 const ProgressBar = require('progress');
+const tough = require('tough-cookie');
+const Cookie = tough.Cookie;
+const CookieJar = new tough.CookieJar();
+const request = require('request');
+var FileCookieStore = require('file-cookie-store');
 
 var getPerformance = function (config, cb) {
 
   if (Array.isArray(config.url)) {
-    var output = []
+    var output = [];
+    var index = 0;
     async.each(config.url, function (url, done) {
-      _getPerformance(url, config.fileData.timeout, function (err, json) {
+      _getPerformance(url, config.fileData.timeout, config.fileData.cookies, config.fileData.screenshot, function (err, json) {
         if (err) {
           output.push(_setError(err, url, config.fileData.timeout));
           done();
@@ -28,7 +34,7 @@ var getPerformance = function (config, cb) {
     });
   }
   else {
-    _getPerformance(config.url, config.fileData.timeout, function (err, json) {
+    _getPerformance(config.url, config.fileData.timeout, config.fileData.cookies, config.fileData.screenshot, function (err, json) {
       if (err) {
         cb(err, _setError(err, config.url, config.fileData.timeout));
       }
@@ -40,9 +46,10 @@ var getPerformance = function (config, cb) {
   }
 }
 
-function _getPerformance(url, timeout, cb) {
+function _getPerformance(url, timeout, cookieDough, screenshot, cb) {
   var bar;
   var startTime = moment().format("MMM Do, YYYY h:mm:ss a");
+  var screenshotName = null;
 
   bar = new ProgressBar('[:bar] :percent :etas', {
     total: 100,
@@ -51,7 +58,11 @@ function _getPerformance(url, timeout, cb) {
 
   console.log("Running performance test on: " + url);
 
-  var child = phantomas(url, { timeout: timeout }, function (err, json, results) {
+  if (screenshot === true) {
+    screenshotName = "screenshots/screenshot - " + url.replace(/\//g, "_") + ".png";
+  }
+  
+  var child = phantomas(url, { timeout: timeout, config:"./config.json", log:"pjs-log.txt", screenshot: screenshotName }, function (err, json, results) {
     if (err) {
       cb(err, null)
     }
@@ -68,7 +79,7 @@ function _getPerformance(url, timeout, cb) {
     if (bar) {
       bar.tick(inc);
     }
-    progress = progress == 100 ? 0:progress;
+    progress = progress == 100 ? 0 : progress;
 
   });
 }
@@ -114,7 +125,7 @@ function _filterData(config, json) {
         output["url"] = _.get(json, "url");
         output["startTime"] = _.get(json, "startTime");
         output["endTime"] = _.get(json, "endTime");
-        output = _findTotalLoadTime(_output, jsonObject);
+        output = _findTotalLoadTime(output, json);
       }
       else {
         output = json;
@@ -156,6 +167,29 @@ function _setError(err, url, timeout) {
   }
 
   return errObj;
+}
+
+function bake_cookies(cookieDough, url) {
+  var jar = null
+  if (cookieDough && Array.isArray(cookieDough) && cookieDough.length > 0) {
+    jar = request.jar();
+    cookieDough.forEach(function (piece) {
+      var cookieString = "";
+      Object.keys(piece).forEach(function (key) {
+
+        if (key === 'key') {
+          cookieString += piece.key + "=" + piece.value + ",";
+        } else {
+          cookieString += key + "=" + piece[key] + ",";
+        }
+      });
+
+      var cookie = request.cookie(cookieString);
+      jar.setCookie(cookie, url);
+    });
+  }
+
+  return jar;
 }
 
 export default getPerformance;
