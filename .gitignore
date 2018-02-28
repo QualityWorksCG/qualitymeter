@@ -45,3 +45,5 @@ config.json
 qualitymeter.html
 qualitymeter.json
 screenshots/
+.idea/
+*.out
