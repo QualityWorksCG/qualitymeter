@@ -58,7 +58,7 @@
     "rewire": "2.5.2",
     "rimraf": "2.5.4",
     "run-sequence": "1.2.2",
-    "semantic-release": "^15.13.19",
+    "semantic-release": "^17.2.3",
     "should": "10.0.0",
     "watch": "0.19.1"
   },
